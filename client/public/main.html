@@ -1,45 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Mind Map</title>
-    <link rel="icon" type="image/x-icon" href="./images/favicon.ico">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.3/css/bulma.min.css">
-    <link rel="stylesheet" href="C:\Users\oharr\OneDrive\Desktop\projects\blendtapez\blendtapez\style\style.css">
-  </head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no, viewport-fit=cover"/>
+<meta name="description" content="A mind map editor, showing how subtrees can be moved, copied, deleted, and laid out."/> 
+<!-- Copyright 1998-2022 by Northwoods Software Corporation. -->
+<title>Mind Map</title>
+</head>
 
 <body>
-    <header>
-        <nav class="navbar is-black" class="navbar" role="navigation" aria-label="main navigation">
-            <div class="navbar-brand">
-                <a role="button" class="navbar-burger" aria-label="menu" aria-expanded="false"
-                    data-target="navbarBasicExample">
-                </a>
-            </div>
-            <div id="navbarBasicExample" class="navbar-menu">
-                <div class="navbar-start">
-                    <a class="navbar-item">
-                        Logout
-                    </a>
-                </div>
-            </div>
-            </div>
-        </nav>
-    </header>
-    <main>
-        <section class="hero is-white is-fullheight">
-            <div class="columns is-gapless">
-                <div class="column is half is-left">
-                    <div class="container has-text-centered">
-                        <div class="column is-4 is-offset-4">
-                            <h3 class="title has-text-black">Mind Map</h3>
-                            <blockquote>instructions on how to use</blockquote>
-                        </div>
-                    </div>
-                </div>
-                <div class="column is-gapless is-right">
-                </div>
-            </div>
-          </section>
-        <script src="../public/javascript/login.js"></script>
-    </main>
+    <script src="../src/assets/js/go.js"></script>
+    <div id="allSampleContent" class="p-4 w-full">
+    <script id="code">
+    function init() {
+
+      // Since 2.2 you can also author concise templates with method chaining instead of GraphObject.make
+      // For details, see https://gojs.net/latest/intro/buildingObjects.html
+      const $ = go.GraphObject.make;
+
+      myDiagram =
+        $(go.Diagram, "myDiagramDiv",
+          {
+            // when the user drags a node, also move/copy/delete the whole subtree starting with that node
+            "commandHandler.copiesTree": true,
+            "commandHandler.copiesParentKey": true,
+            "commandHandler.deletesTree": true,
+            "draggingTool.dragsTree": true,
+            "undoManager.isEnabled": true
+          });
+
+      // when the document is modified, add a "*" to the title and enable the "Save" button
+      myDiagram.addDiagramListener("Modified", e => {
+        var button = document.getElementById("SaveButton");
+        if (button) button.disabled = !myDiagram.isModified;
+        var idx = document.title.indexOf("*");
+        if (myDiagram.isModified) {
+          if (idx < 0) document.title += "*";
+        } else {
+          if (idx >= 0) document.title = document.title.slice(0, idx);
+        }
+      });
+
+      // a node consists of some text with a line shape underneath
+      myDiagram.nodeTemplate =
+        $(go.Node, "Vertical",
+          { selectionObjectName: "TEXT" },
+          $(go.TextBlock,
+            {
+              name: "TEXT",
+              minSize: new go.Size(30, 15),
+              editable: true
+            },
+            // remember not only the text string but the scale and the font in the node data
+            new go.Binding("text", "text").makeTwoWay(),
+            new go.Binding("scale", "scale").makeTwoWay(),
+            new go.Binding("font", "font").makeTwoWay()),
+          $(go.Shape, "LineH",
+            {
+              stretch: go.GraphObject.Horizontal,
+              strokeWidth: 3, height: 3,
+              // this line shape is the port -- what links connect with
+              portId: "", fromSpot: go.Spot.LeftRightSides, toSpot: go.Spot.LeftRightSides
+            },
+            new go.Binding("stroke", "brush"),
+            // make sure links come in from the proper direction and go out appropriately
+            new go.Binding("fromSpot", "dir", d => spotConverter(d, true)),
+            new go.Binding("toSpot", "dir", d => spotConverter(d, false))),
+          // remember the locations of each node in the node data
+          new go.Binding("location", "loc", go.Point.parse).makeTwoWay(go.Point.stringify),
+          // make sure text "grows" in the desired direction
+          new go.Binding("locationSpot", "dir", d => spotConverter(d, false))
+        );
+
+      // selected nodes show a button for adding children
+      myDiagram.nodeTemplate.selectionAdornmentTemplate =
+        $(go.Adornment, "Spot",
+          $(go.Panel, "Auto",
+            // this Adornment has a rectangular blue Shape around the selected node
+            $(go.Shape, { fill: null, stroke: "dodgerblue", strokeWidth: 3 }),
+            $(go.Placeholder, { margin: new go.Margin(4, 4, 0, 4) })
+          ),
+          // and this Adornment has a Button to the right of the selected node
+          $("Button",
+            {
+              alignment: go.Spot.Right,
+              alignmentFocus: go.Spot.Left,
+              click: addNodeAndLink  // define click behavior for this Button in the Adornment
+            },
+            $(go.TextBlock, "+",  // the Button content
+              { font: "bold 8pt sans-serif" })
+          )
+        );
+
+      // the context menu allows users to change the font size and weight,
+      // and to perform a limited tree layout starting at that node
+      myDiagram.nodeTemplate.contextMenu =
+        $("ContextMenu",
+          $("ContextMenuButton",
+            $(go.TextBlock, "Bigger"),
+            { click: (e, obj) => changeTextSize(obj, 1.1) }),
+          $("ContextMenuButton",
+            $(go.TextBlock, "Smaller"),
+            { click: (e, obj) => changeTextSize(obj, 1 / 1.1) }),
+          $("ContextMenuButton",
+            $(go.TextBlock, "Bold/Normal"),
+            { click: (e, obj) => toggleTextWeight(obj) }),
+          $("ContextMenuButton",
+            $(go.TextBlock, "Copy"),
+            { click: (e, obj) => e.diagram.commandHandler.copySelection() }),
+          $("ContextMenuButton",
+            $(go.TextBlock, "Delete"),
+            { click: (e, obj) => e.diagram.commandHandler.deleteSelection() }),
+          $("ContextMenuButton",
+            $(go.TextBlock, "Undo"),
+            { click: (e, obj) => e.diagram.commandHandler.undo() }),
+          $("ContextMenuButton",
+            $(go.TextBlock, "Redo"),
+            { click: (e, obj) => e.diagram.commandHandler.redo() }),
+          $("ContextMenuButton",
+            $(go.TextBlock, "Layout"),
+            {
+              click: (e, obj) => {
+                var adorn = obj.part;
+                adorn.diagram.startTransaction("Subtree Layout");
+                layoutTree(adorn.adornedPart);
+                adorn.diagram.commitTransaction("Subtree Layout");
+              }
+            }
+          )
+        );
+
+      // a link is just a Bezier-curved line of the same color as the node to which it is connected
+      myDiagram.linkTemplate =
+        $(go.Link,
+          {
+            curve: go.Link.Bezier,
+            fromShortLength: -2,
+            toShortLength: -2,
+            selectable: false
+          },
+          $(go.Shape,
+            { strokeWidth: 3 },
+            new go.Binding("stroke", "toNode", n => {
+              if (n.data.brush) return n.data.brush;
+              return "black";
+            }).ofObject())
+        );
+
+      // the Diagram's context menu just displays commands for general functionality
+      myDiagram.contextMenu =
+        $("ContextMenu",
+          $("ContextMenuButton",
+            $(go.TextBlock, "Paste"),
+            { click: (e, obj) => e.diagram.commandHandler.pasteSelection(e.diagram.toolManager.contextMenuTool.mouseDownPoint) },
+            new go.Binding("visible", "", o => o.diagram && o.diagram.commandHandler.canPasteSelection(o.diagram.toolManager.contextMenuTool.mouseDownPoint)).ofObject()),
+          $("ContextMenuButton",
+            $(go.TextBlock, "Undo"),
+            { click: (e, obj) => e.diagram.commandHandler.undo() },
+            new go.Binding("visible", "", o => o.diagram && o.diagram.commandHandler.canUndo()).ofObject()),
+          $("ContextMenuButton",
+            $(go.TextBlock, "Redo"),
+            { click: (e, obj) => e.diagram.commandHandler.redo() },
+            new go.Binding("visible", "", o => o.diagram && o.diagram.commandHandler.canRedo()).ofObject()),
+          $("ContextMenuButton",
+            $(go.TextBlock, "Save"),
+            { click: (e, obj) => save() }),
+          $("ContextMenuButton",
+            $(go.TextBlock, "Load"),
+            { click: (e, obj) => load() })
+        );
+
+      myDiagram.addDiagramListener("SelectionMoved", e => {
+        var rootX = myDiagram.findNodeForKey(0).location.x;
+        myDiagram.selection.each(node => {
+          if (node.data.parent !== 0) return; // Only consider nodes connected to the root
+          var nodeX = node.location.x;
+          if (rootX < nodeX && node.data.dir !== "right") {
+            updateNodeDirection(node, "right");
+          } else if (rootX > nodeX && node.data.dir !== "left") {
+            updateNodeDirection(node, "left");
+          }
+          layoutTree(node);
+        });
+      });
+
+      // read in the predefined graph using the JSON format data held in the "mySavedModel" textarea
+      load();
+    }
+
+    function spotConverter(dir, from) {
+      if (dir === "left") {
+        return (from ? go.Spot.Left : go.Spot.Right);
+      } else {
+        return (from ? go.Spot.Right : go.Spot.Left);
+      }
+    }
+
+    function changeTextSize(obj, factor) {
+      var adorn = obj.part;
+      adorn.diagram.startTransaction("Change Text Size");
+      var node = adorn.adornedPart;
+      var tb = node.findObject("TEXT");
+      tb.scale *= factor;
+      adorn.diagram.commitTransaction("Change Text Size");
+    }
+
+    function toggleTextWeight(obj) {
+      var adorn = obj.part;
+      adorn.diagram.startTransaction("Change Text Weight");
+      var node = adorn.adornedPart;
+      var tb = node.findObject("TEXT");
+      // assume "bold" is at the start of the font specifier
+      var idx = tb.font.indexOf("bold");
+      if (idx < 0) {
+        tb.font = "bold " + tb.font;
+      } else {
+        tb.font = tb.font.slice(idx + 5);
+      }
+      adorn.diagram.commitTransaction("Change Text Weight");
+    }
+
+    function updateNodeDirection(node, dir) {
+      myDiagram.model.setDataProperty(node.data, "dir", dir);
+      // recursively update the direction of the child nodes
+      var chl = node.findTreeChildrenNodes(); // gives us an iterator of the child nodes related to this particular node
+      while (chl.next()) {
+        updateNodeDirection(chl.value, dir);
+      }
+    }
+
+    function addNodeAndLink(e, obj) {
+      var adorn = obj.part;
+      var diagram = adorn.diagram;
+      diagram.startTransaction("Add Node");
+      var oldnode = adorn.adornedPart;
+      var olddata = oldnode.data;
+      // copy the brush and direction to the new node data
+      var newdata = { text: "idea", brush: olddata.brush, dir: olddata.dir, parent: olddata.key };
+      diagram.model.addNodeData(newdata);
+      layoutTree(oldnode);
+      diagram.commitTransaction("Add Node");
+
+      // if the new node is off-screen, scroll the diagram to show the new node
+      var newnode = diagram.findNodeForData(newdata);
+      if (newnode !== null) diagram.scrollToRect(newnode.actualBounds);
+    }
+
+    function layoutTree(node) {
+      if (node.data.key === 0) {  // adding to the root?
+        layoutAll();  // lay out everything
+      } else {  // otherwise lay out only the subtree starting at this parent node
+        var parts = node.findTreeParts();
+        layoutAngle(parts, node.data.dir === "left" ? 180 : 0);
+      }
+    }
+
+    function layoutAngle(parts, angle) {
+      var layout = go.GraphObject.make(go.TreeLayout,
+        {
+          angle: angle,
+          arrangement: go.TreeLayout.ArrangementFixedRoots,
+          nodeSpacing: 5,
+          layerSpacing: 20,
+          setsPortSpot: false, // don't set port spots since we're managing them with our spotConverter function
+          setsChildPortSpot: false
+        });
+      layout.doLayout(parts);
+    }
+
+    function layoutAll() {
+      var root = myDiagram.findNodeForKey(0);
+      if (root === null) return;
+      myDiagram.startTransaction("Layout");
+      // split the nodes and links into two collections
+      var rightward = new go.Set(/*go.Part*/);
+      var leftward = new go.Set(/*go.Part*/);
+      root.findLinksConnected().each(link => {
+        var child = link.toNode;
+        if (child.data.dir === "left") {
+          leftward.add(root);  // the root node is in both collections
+          leftward.add(link);
+          leftward.addAll(child.findTreeParts());
+        } else {
+          rightward.add(root);  // the root node is in both collections
+          rightward.add(link);
+          rightward.addAll(child.findTreeParts());
+        }
+      });
+      // do one layout and then the other without moving the shared root node
+      layoutAngle(rightward, 0);
+      layoutAngle(leftward, 180);
+      myDiagram.commitTransaction("Layout");
+    }
+
+    // Show the diagram's model in JSON format
+    function save() {
+      document.getElementById("mySavedModel").value = myDiagram.model.toJson();
+      myDiagram.isModified = false;
+    }
+    function load() {
+      myDiagram.model = go.Model.fromJson(document.getElementById("mySavedModel").value);
+    }
+    window.addEventListener('DOMContentLoaded', init);
+  </script>
+
+<div id="sample">
+  <div id="myDiagramDiv" style="border: solid 1px black; width:100%; height:300px;"></div>
+
+  <button id="SaveButton" onclick="save()">Save</button>
+  <button onclick="load()">Load</button>
+  <button onclick="layoutAll()">Layout</button>
+  Diagram Model saved in JSON format:
+  <br />
+  <textarea id="mySavedModel" style="width:100%;height:400px">
+{ "class": "go.TreeModel",
+  "nodeDataArray": [
+{"key":0, "text":"Mind Map", "loc":"0 0"},
+{"key":1, "parent":0, "text":"Getting more time", "brush":"skyblue", "dir":"right", "loc":"77 -22"},
+{"key":11, "parent":1, "text":"Wake up early", "brush":"skyblue", "dir":"right", "loc":"200 -48"},
+{"key":12, "parent":1, "text":"Delegate", "brush":"skyblue", "dir":"right", "loc":"200 -22"},
+{"key":13, "parent":1, "text":"Simplify", "brush":"skyblue", "dir":"right", "loc":"200 4"},
+{"key":2, "parent":0, "text":"More effective use", "brush":"darkseagreen", "dir":"right", "loc":"77 43"},
+{"key":21, "parent":2, "text":"Planning", "brush":"darkseagreen", "dir":"right", "loc":"203 30"},
+{"key":211, "parent":21, "text":"Priorities", "brush":"darkseagreen", "dir":"right", "loc":"274 17"},
+{"key":212, "parent":21, "text":"Ways to focus", "brush":"darkseagreen", "dir":"right", "loc":"274 43"},
+{"key":22, "parent":2, "text":"Goals", "brush":"darkseagreen", "dir":"right", "loc":"203 56"},
+{"key":3, "parent":0, "text":"Time wasting", "brush":"palevioletred", "dir":"left", "loc":"-20 -31.75"},
+{"key":31, "parent":3, "text":"Too many meetings", "brush":"palevioletred", "dir":"left", "loc":"-117 -64.25"},
+{"key":32, "parent":3, "text":"Too much time spent on details", "brush":"palevioletred", "dir":"left", "loc":"-117 -25.25"},
+{"key":33, "parent":3, "text":"Message fatigue", "brush":"palevioletred", "dir":"left", "loc":"-117 0.75"},
+{"key":331, "parent":31, "text":"Check messages less", "brush":"palevioletred", "dir":"left", "loc":"-251 -77.25"},
+{"key":332, "parent":31, "text":"Message filters", "brush":"palevioletred", "dir":"left", "loc":"-251 -51.25"},
+{"key":4, "parent":0, "text":"Key issues", "brush":"coral", "dir":"left", "loc":"-20 52.75"},
+{"key":41, "parent":4, "text":"Methods", "brush":"coral", "dir":"left", "loc":"-103 26.75"},
+{"key":42, "parent":4, "text":"Deadlines", "brush":"coral", "dir":"left", "loc":"-103 52.75"},
+{"key":43, "parent":4, "text":"Checkpoints", "brush":"coral", "dir":"left", "loc":"-103 78.75"}
+ ]
+}
+  </textarea>
+</div>
+    </div>
+    <!-- * * * * * * * * * * * * * -->
+    <!--  End of GoJS sample code  -->
+  </div>
 </body>
+<!--  This script is part of the gojs.net website, and is not needed to run the sample -->
+<script src="../src/assets/js/goSamples.js"></script>
+</html>
