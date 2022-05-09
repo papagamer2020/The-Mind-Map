@@ -1,5 +1,5 @@
 {
-    "name": "mern-client",
+    "name": "mind-map",
     "version": "0.1.0",
     "private": true,
     "proxy": "http://localhost:3001/",
@@ -8,6 +8,7 @@
         "@testing-library/jest-dom": "^5.11.4",
         "@testing-library/react": "^11.1.0",
         "@testing-library/user-event": "^12.1.10",
+        "bulma": "^0.9.4",
         "dotenv": "^8.2.0",
         "express": "^4.17.3",
         "express-handlebars": "^6.0.3",
@@ -45,8 +46,5 @@
             "last 1 firefox version",
             "last 1 safari version"
         ]
-    },
-    "devDependencies": {
-        "tailwindcss": "^3.0.24"
     }
 }
