@@ -1,14 +1,43 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no, viewport-fit=cover"/>
-<meta name="description" content="A mind map editor, showing how subtrees can be moved, copied, deleted, and laid out."/> 
-<!-- Copyright 1998-2022 by Northwoods Software Corporation. -->
-<title>Mind Map</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Mind Map</title>
+    <link rel="icon" type="image/x-icon" href="./images/favicon.ico">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.3/css/bulma.min.css">
 </head>
 
 <body>
+    <header>
+        <nav class="navbar is-black" class="navbar" role="navigation" aria-label="main navigation">
+            <div class="navbar-brand">
+                <a role="button" class="navbar-burger" aria-label="menu" aria-expanded="false" data-target="navbarBasicExample">
+                    <span aria-hidden="true"></span>
+                    <span aria-hidden="true"></span>
+                    <span aria-hidden="true"></span>
+                </a>
+            </div>
+            <div id="navbarBasicExample" class="navbar-menu">
+                <div class="navbar-start">
+                    <a class="navbar-item">
+                        <strong>Mind Map</strong>
+                    </a>
+                </div>
+            </div>
+            <div class="navbar-end">
+                <div class="navbar-item">
+                    <div class="buttons">
+                        <a class="button is-primary">
+                            <strong>Log out</strong>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+<!-- Copyright 1998-2022 by Northwoods Software Corporation. -->
     <script src="../src/assets/js/go.js"></script>
     <div id="allSampleContent" class="p-4 w-full">
     <script id="code">
