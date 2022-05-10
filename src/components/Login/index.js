@@ -68,7 +68,7 @@ function ContactForm() {
                     </div>
                 </div>
                 <p class="has-text-black">
-                    <button class="button is-block is-white is-fullwidth is-r is-rounded">Already have an account?</button> &nbsp;·&nbsp;
+                    <button class="button is-block is-white is-fullwidth is-r is-rounded">Create an account</button> &nbsp;·&nbsp;
                 </p>
             </div>
         </div>
