@@ -3,8 +3,6 @@ document.addEventListener("DOMContentLoaded", function() {
   var p1 = document.createElement("p");
   window.dirName = location.pathname.split('/').slice(-2);
   window.samplePath = dirName.join('/'); // dir/name.html
-  p1.innerHTML = "<a href='https://github.com/NorthwoodsSoftware/GoJS/blob/master/" +
-                samplePath + "' target='_blank'>View this sample page's source on GitHub</a>";
   byId("sample").parentElement.appendChild(p1);
   window.b1 = document.createElement("button");
   window.b2 = document.createElement("button");
@@ -15,7 +13,7 @@ document.addEventListener("DOMContentLoaded", function() {
   byId("sample").parentElement.appendChild(b1);
   byId("sample").parentElement.appendChild(b2);
 
-  var copyright = 'Copyright 1998-2022 by Northwoods Software.';
+
   var p2 = document.createElement("p");
   p2.classList = "text-xs";
   p2.innerHTML = (window.go) ? 'GoJS version ' + go.version + '. ' + copyright : copyright;
@@ -139,14 +137,7 @@ function goDownload() {
   <html lang="en">
   <body>
   <script src="https://unpkg.com/gojs@${go.version}/release/go.js"><\/script>
-  <p>
-    This is a minimalist HTML and JavaScript skeleton of the GoJS Sample
-    <a href="https://gojs.net/latest/${samplePath}">${title}<\/a>. It was automatically generated from a button on the sample page,
-    and does not contain the full HTML. It is intended as a starting point to adapt for your own usage.
-    For many samples, you may need to inspect the
-    <a href="https://github.com/NorthwoodsSoftware/GoJS/blob/master/${samplePath}">full source on Github<\/a>
-    and copy other files or scripts.
-  <\/p>
+
   ${sampleHTML.outerHTML}
   </body>
   </html>`;
