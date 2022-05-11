@@ -4,7 +4,7 @@ import { useSelector, useDispatch } from "react-redux";
 import MapForm from "../components/MapForm";
 import MapItem from "../components/MapItem";
 import Spinner from "../components/Spinner";
-import { getMaps, reset } from "../features/maps/mapSlice";
+//import { getMaps, reset } from "../features/maps/mapSlice";
 
 function Home() {
   const navigate = useNavigate();
@@ -24,11 +24,11 @@ function Home() {
       navigate("/login");
     }
 
-    dispatch(getMaps());
+    // dispatch(getMaps());
 
-    return () => {
-      dispatch(reset());
-    };
+    // return () => {
+    //   dispatch(reset());
+    // };
   }, [user, navigate, isError, message, dispatch]);
 
   if (isLoading) {
