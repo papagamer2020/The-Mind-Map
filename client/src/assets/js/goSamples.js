@@ -4,12 +4,6 @@ document.addEventListener("DOMContentLoaded", function() {
   window.dirName = location.pathname.split('/').slice(-2);
   window.samplePath = dirName.join('/'); // dir/name.html
   byId("sample").parentElement.appendChild(p1);
-  window.b1 = document.createElement("button");
-  window.b2 = document.createElement("button");
-  b1.onclick = goViewSource;
-  b2.onclick = goDownload;
-  b1.innerText = "View the code for this sample in-page";
-  b2.innerText = "Download the HTML and JS to use as a starting point";
   byId("sample").parentElement.appendChild(b1);
   byId("sample").parentElement.appendChild(b2);
 
@@ -44,19 +38,7 @@ document.addEventListener("DOMContentLoaded", function() {
     }
   }
 
-  var s = document.createElement('script');
-  s.src = "https://www.googletagmanager.com/gtag/js?id=UA-1506307-5";
-  document.body.appendChild(s);
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date()); gtag('config', 'UA-1506307-5');
-  var getOutboundLink = function(url, label) {
-    gtag('event', 'click', {
-      'event_category': 'outbound',
-      'event_label': label,
-      'transport_type': 'beacon'
-    });
-  }
+
 
   // topnav
   var topButton = byId("topnavButton");
@@ -141,9 +123,8 @@ function goDownload() {
   ${sampleHTML.outerHTML}
   </body>
   </html>`;
-  // replace all uses of '../extensions' with unpkg equivalent
   text = text.replace(/\.\.\/extensions/g, `https://unpkg.com/gojs@${go.version}/extensions`);
-  // any src that does not begin with 'http' should get `https://unpkg.com/gojs@${go.version}/CURRENTFOLDER/`
+  
   text = text.replace(/<script src="(?:(?!http))+/g, `https://unpkg.com/gojs@${go.version}/${dirName}`);
   var element = document.createElement('a');
   element.setAttribute('href', 'data:text/html;charset=utf-8,' + encodeURIComponent(text));
