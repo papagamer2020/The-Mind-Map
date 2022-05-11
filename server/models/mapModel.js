@@ -17,4 +17,4 @@ const mapSchema = mongoose.Schema(
   }
 );
 
-module.exports = mongoose.model("Map", goalSchema);
+module.exports = mongoose.model("Map", mapSchema);

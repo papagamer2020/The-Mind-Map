@@ -1,8 +1,9 @@
+const path = require("path");
 const express = require("express");
 const colors = require("colors");
 const dotenv = require("dotenv").config();
-const { errorHandler } = require("./utils/error");
-const connectDB = require("./config/connection");
+const { errorHandler } = require("./middleware/errorMiddleware");
+const connectDB = require("./config/db");
 const port = process.env.PORT || 3001;
 
 connectDB();
@@ -11,17 +12,16 @@ const app = express();
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
-
-app.use("/api/map", require("./routes/mapRoutes"));
+app.use("/api/maps", require("./routes/mapRoutes"));
 app.use("/api/users", require("./routes/userRoutes"));
 
 // Serve frontend
 if (process.env.NODE_ENV === "production") {
-  app.use(express.static(path.join(__dirname, "../frontend/build")));
+  app.use(express.static(path.join(__dirname, "../client/build")));
 
   app.get("*", (req, res) =>
     res.sendFile(
-      path.resolve(__dirname, "../", "frontend", "build", "index.html")
+      path.resolve(__dirname, "../", "client", "build", "index.html")
     )
   );
 } else {
