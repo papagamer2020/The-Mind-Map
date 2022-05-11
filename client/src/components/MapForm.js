@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useDispatch } from "react-redux";
-import { createMap } from "../features/maps/mapSlice";
+//import { createMap } from "../features/maps/mapSlice";
 
 function MapForm() {
   const [text, setText] = useState("");
@@ -10,7 +10,7 @@ function MapForm() {
   const onSubmit = (e) => {
     e.preventDefault();
 
-    dispatch(createMap({ text }));
+    //  dispatch(createMap({ text }));
     setText("");
   };
 
